@@ -64,7 +64,7 @@ export class AuthService {
       user = await this.usersService.create({
         name: decodedToken.name,
         email,
-        password: '',
+        password: '', // Consider using a default password or another method
       });
     }
 
