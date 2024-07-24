@@ -1,3 +1,4 @@
+// register.dto.ts
 import { IsEmail, IsString } from 'class-validator';
 
 export class RegisterDto {
@@ -6,4 +7,7 @@ export class RegisterDto {
 
   @IsString()
   password: string;
+
+  @IsString()
+  name: string;
 }

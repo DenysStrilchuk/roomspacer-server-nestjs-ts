@@ -1,11 +1,13 @@
-import { Injectable } from '@nestjs/common';
+// auth.service.ts
+import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
-import { FirebaseService } from '../ config/firebase.config';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { CreateUserDto } from '../users/dto/create-user.dto';
+import { FirebaseService } from '../ config/firebase.config';
 
 @Injectable()
 export class AuthService {
@@ -17,9 +19,19 @@ export class AuthService {
 
   async register(registerDto: RegisterDto) {
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-    const user = await this.usersService.create({
-      ...registerDto,
+
+    const createUserDto: CreateUserDto = {
+      email: registerDto.email,
       password: hashedPassword,
+      name: registerDto.name,
+    };
+
+    const user = await this.usersService.create(createUserDto);
+
+    // Створення користувача у Firebase
+    await this.firebaseService.getAuth().createUser({
+      email: registerDto.email,
+      password: registerDto.password,
     });
 
     return this.generateToken(user);
@@ -41,6 +53,12 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(resetPasswordDto.password, 10);
     await this.usersService.updatePassword(user.id, hashedPassword);
+
+    // Оновлення пароля у Firebase
+    await this.firebaseService.getAuth().updateUser(user.id, {
+      password: resetPasswordDto.password,
+    });
+
     return { message: 'Password updated successfully' };
   }
 
