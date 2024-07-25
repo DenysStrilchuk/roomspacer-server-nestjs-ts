@@ -7,11 +7,12 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { FirebaseService } from '../ config/firebase.config';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { FirebaseService } from '../ config/firebase.config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot(),
     UsersModule,
     PassportModule,
     JwtModule.registerAsync({
@@ -23,7 +24,13 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
       }),
     }),
   ],
-  providers: [AuthService, JwtStrategy, GoogleStrategy, FirebaseService],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    GoogleStrategy,
+    FirebaseService,
+    JwtAuthGuard,
+  ],
   controllers: [AuthController],
   exports: [AuthService, JwtAuthGuard],
 })
