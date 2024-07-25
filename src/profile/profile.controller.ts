@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
-import { ProfileService } from './profile.service';
 import { User } from '../common/decorators/user.decorator';
+import { ProfileService } from './profile.service';
 
 @Controller('profile')
 export class ProfileController {
@@ -8,7 +8,6 @@ export class ProfileController {
 
   @Get()
   getProfile(@User() user: any) {
-    // Отримуємо профіль користувача з сервісу
     return this.profileService.getProfile(user);
   }
 }
