@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './interfaces/user.interface';
 import { FirebaseService } from '../ config/firebase.config';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -27,8 +28,16 @@ export class UsersService {
   }
 
   async updatePassword(id: string, password: string): Promise<void> {
+    console.log(`Updating password for user with id: ${id}`);
     const docRef = this.collection.doc(id);
-    await docRef.update({ password });
+    try {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await docRef.update({ password: hashedPassword });
+      console.log(`Password updated successfully for user with id: ${id}`);
+    } catch (error) {
+      console.error(`Failed to update password for user with id: ${id}`, error);
+      throw error;
+    }
   }
 
   async findOrCreate(userDto: CreateUserDto): Promise<User> {
