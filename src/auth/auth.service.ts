@@ -43,7 +43,15 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const user = await this.usersService.findByEmail(loginDto.email);
     if (user && (await bcrypt.compare(loginDto.password, user.password))) {
-      return this.generateToken(user);
+      // Отримати користувача з Firebase для перевірки аутентифікації
+      const firebaseUser = await this.firebaseService
+        .getAuth()
+        .getUserByEmail(loginDto.email);
+
+      // Якщо користувач існує у Firebase, аутентифікувати його
+      if (firebaseUser) {
+        return this.generateToken(user);
+      }
     }
     throw new UnauthorizedException('Invalid credentials');
   }
