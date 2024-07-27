@@ -1,11 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './interfaces/user.interface';
-import { FirebaseService } from '../ config/firebase.config';
 import * as bcrypt from 'bcrypt';
+import { FirebaseService } from '../ config/firebase.config';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
   private readonly collection = this.firebaseService
     .getFirestore()
     .collection('users');
@@ -28,14 +29,17 @@ export class UsersService {
   }
 
   async updatePassword(id: string, password: string): Promise<void> {
-    console.log(`Updating password for user with id: ${id}`);
+    this.logger.log(`Updating password for user with id: ${id}`);
     const docRef = this.collection.doc(id);
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
       await docRef.update({ password: hashedPassword });
-      console.log(`Password updated successfully for user with id: ${id}`);
+      this.logger.log(`Password updated successfully for user with id: ${id}`);
     } catch (error) {
-      console.error(`Failed to update password for user with id: ${id}`, error);
+      this.logger.error(
+        `Failed to update password for user with id: ${id}`,
+        error,
+      );
       throw error;
     }
   }

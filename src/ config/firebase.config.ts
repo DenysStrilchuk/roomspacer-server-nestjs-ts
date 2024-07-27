@@ -45,6 +45,10 @@ export class FirebaseService {
   }
 
   getFirestore() {
-    return this.defaultApp.firestore();
+    const firestore = this.defaultApp.firestore();
+    firestore.settings({
+      requestTimeout: 120000, // збільшуємо тайм-аут до 120 секунд
+    });
+    return firestore;
   }
 }

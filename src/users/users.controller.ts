@@ -6,6 +6,8 @@ import {
   Param,
   Patch,
   UseGuards,
+  InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -14,16 +16,28 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('users')
 export class UsersController {
+  private readonly logger = new Logger(UsersController.name);
+
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
   async create(@Body() createUserDto: CreateUserDto): Promise<User> {
-    return await this.usersService.create(createUserDto);
+    try {
+      return await this.usersService.create(createUserDto);
+    } catch (error) {
+      this.logger.error('Failed to create user', error.stack);
+      throw new InternalServerErrorException('Failed to create user');
+    }
   }
 
   @Get(':email')
   async findByEmail(@Param('email') email: string): Promise<User> {
-    return await this.usersService.findByEmail(email);
+    try {
+      return await this.usersService.findByEmail(email);
+    } catch (error) {
+      this.logger.error('Failed to find user by email', error.stack);
+      throw new InternalServerErrorException('Failed to find user by email');
+    }
   }
 
   @Patch(':id/password')
@@ -32,6 +46,14 @@ export class UsersController {
     @Param('id') id: string,
     @Body('password') password: string,
   ): Promise<void> {
-    return await this.usersService.updatePassword(id, password);
+    try {
+      return await this.usersService.updatePassword(id, password);
+    } catch (error) {
+      this.logger.error(
+        `Failed to update password for user with id: ${id}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Failed to update password');
+    }
   }
 }
