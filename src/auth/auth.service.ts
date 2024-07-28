@@ -10,14 +10,12 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
-import { FirebaseService } from '../ config/firebase.config';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-    private readonly firebaseService: FirebaseService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -31,27 +29,13 @@ export class AuthService {
 
     const user = await this.usersService.create(createUserDto);
 
-    // Створення користувача у Firebase
-    await this.firebaseService.getAuth().createUser({
-      email: registerDto.email,
-      password: registerDto.password,
-    });
-
     return this.generateToken(user);
   }
 
   async login(loginDto: LoginDto) {
     const user = await this.usersService.findByEmail(loginDto.email);
     if (user && (await bcrypt.compare(loginDto.password, user.password))) {
-      // Отримати користувача з Firebase для перевірки аутентифікації
-      const firebaseUser = await this.firebaseService
-        .getAuth()
-        .getUserByEmail(loginDto.email);
-
-      // Якщо користувач існує у Firebase, аутентифікувати його
-      if (firebaseUser) {
-        return this.generateToken(user);
-      }
+      return this.generateToken(user);
     }
     throw new UnauthorizedException('Invalid credentials');
   }
@@ -64,11 +48,6 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(resetPasswordDto.password, 10);
     await this.usersService.updatePassword(user.id, hashedPassword);
-
-    // Оновлення пароля у Firebase
-    await this.firebaseService.getAuth().updateUser(user.id, {
-      password: resetPasswordDto.password,
-    });
 
     return { message: 'Password updated successfully' };
   }

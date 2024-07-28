@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { ConfigService } from '@nestjs/config';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class FirebaseService {
   private defaultApp: admin.app.App;
+  private transporter: nodemailer.Transporter;
 
   constructor(private configService: ConfigService) {
     if (admin.apps.length === 0) {
@@ -38,6 +40,17 @@ export class FirebaseService {
     } else {
       this.defaultApp = admin.apps[0];
     }
+
+    // Налаштування Nodemailer для відправки реальних листів через SMTP сервер (наприклад, Gmail)
+    this.transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com', // SMTP хост для Gmail
+      port: 587, // Порт для Gmail
+      secure: false, // true для 465, false для інших портів
+      auth: {
+        user: this.configService.get<string>('EMAIL_USER'), // ваш SMTP username (електронна пошта)
+        pass: this.configService.get<string>('EMAIL_PASS'), // ваш SMTP password (пароль від електронної пошти)
+      },
+    });
   }
 
   getAuth() {
@@ -50,5 +63,47 @@ export class FirebaseService {
       requestTimeout: 120000, // збільшуємо тайм-аут до 120 секунд
     });
     return firestore;
+  }
+
+  async sendEmail(to: string, subject: string, text: string): Promise<void> {
+    const mailOptions = {
+      from: this.configService.get<string>('EMAIL_USER'), // замініть на вашу електронну адресу
+      to,
+      subject,
+      text,
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+    } catch (error) {
+      console.error('Error sending email:', error);
+    }
+  }
+
+  async sendEmailVerification(userId: string): Promise<void> {
+    const user = await this.getAuth().getUser(userId);
+    const link = await this.getAuth().generateEmailVerificationLink(user.email);
+    await this.sendEmail(
+      user.email,
+      'Email Verification',
+      `Verify your email: ${link}`,
+    );
+  }
+
+  async sendPasswordResetEmail(email: string): Promise<void> {
+    const link = await this.getAuth().generatePasswordResetLink(email);
+    await this.sendEmail(
+      email,
+      'Password Reset',
+      `Reset your password: ${link}`,
+    );
+  }
+
+  async sendEmailChangeVerification(
+    userId: string,
+    newEmail: string,
+  ): Promise<void> {
+    await this.getAuth().updateUser(userId, { email: newEmail });
+    await this.sendEmailVerification(userId);
   }
 }

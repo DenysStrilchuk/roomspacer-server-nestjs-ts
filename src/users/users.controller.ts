@@ -56,4 +56,21 @@ export class UsersController {
       throw new InternalServerErrorException('Failed to update password');
     }
   }
+
+  @Patch(':id/email')
+  @UseGuards(JwtAuthGuard)
+  async changeEmail(
+    @Param('id') id: string,
+    @Body('email') email: string,
+  ): Promise<void> {
+    try {
+      return await this.usersService.changeEmail(id, email);
+    } catch (error) {
+      this.logger.error(
+        `Failed to change email for user with id: ${id}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Failed to change email');
+    }
+  }
 }
