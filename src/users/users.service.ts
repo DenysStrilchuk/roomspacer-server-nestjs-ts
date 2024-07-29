@@ -14,22 +14,17 @@ export class UsersService {
   constructor(private readonly firebaseService: FirebaseService) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    // Створюємо користувача у Firebase
     const userRecord = await this.firebaseService.getAuth().createUser({
       email: createUserDto.email,
       password: createUserDto.password,
     });
 
-    // Створюємо користувача у Firestore
     const docRef = this.collection.doc(userRecord.uid);
     await docRef.set({ ...createUserDto, id: docRef.id });
 
-    // Відправляємо підтвердження електронної пошти
     await this.firebaseService.sendEmailVerification(userRecord.uid);
 
-    const user = await docRef.get();
-    const createdUser = user.data() as User;
-    return createdUser;
+    return (await docRef.get()).data() as User;
   }
 
   async findByEmail(email: string): Promise<User> {
@@ -40,6 +35,10 @@ export class UsersService {
     return snapshot.docs[0].data() as User;
   }
 
+  async getUserRecordByEmail(email: string) {
+    return await this.firebaseService.getAuth().getUserByEmail(email);
+  }
+
   async updatePassword(id: string, password: string): Promise<void> {
     this.logger.log(`Updating password for user with id: ${id}`);
     const docRef = this.collection.doc(id);
@@ -47,7 +46,6 @@ export class UsersService {
       const hashedPassword = await bcrypt.hash(password, 10);
       await docRef.update({ password: hashedPassword });
 
-      // Оновлюємо пароль у Firebase
       await this.firebaseService.getAuth().updateUser(id, { password });
 
       this.logger.log(`Password updated successfully for user with id: ${id}`);

@@ -41,14 +41,13 @@ export class FirebaseService {
       this.defaultApp = admin.apps[0];
     }
 
-    // Налаштування Nodemailer для відправки реальних листів через SMTP сервер (наприклад, Gmail)
     this.transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com', // SMTP хост для Gmail
-      port: 587, // Порт для Gmail
-      secure: false, // true для 465, false для інших портів
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
       auth: {
-        user: this.configService.get<string>('EMAIL_USER'), // ваш SMTP username (електронна пошта)
-        pass: this.configService.get<string>('EMAIL_PASS'), // ваш SMTP password (пароль від електронної пошти)
+        user: this.configService.get<string>('EMAIL_USER'),
+        pass: this.configService.get<string>('EMAIL_PASS'),
       },
     });
   }
@@ -60,14 +59,14 @@ export class FirebaseService {
   getFirestore() {
     const firestore = this.defaultApp.firestore();
     firestore.settings({
-      requestTimeout: 120000, // збільшуємо тайм-аут до 120 секунд
+      requestTimeout: 120000,
     });
     return firestore;
   }
 
   async sendEmail(to: string, subject: string, text: string): Promise<void> {
     const mailOptions = {
-      from: this.configService.get<string>('EMAIL_USER'), // замініть на вашу електронну адресу
+      from: this.configService.get<string>('EMAIL_USER'),
       to,
       subject,
       text,

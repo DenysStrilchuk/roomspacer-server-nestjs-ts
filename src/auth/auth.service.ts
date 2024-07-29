@@ -35,6 +35,12 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const user = await this.usersService.findByEmail(loginDto.email);
     if (user && (await bcrypt.compare(loginDto.password, user.password))) {
+      const userRecord = await this.usersService.getUserRecordByEmail(
+        loginDto.email,
+      );
+      if (!userRecord.emailVerified) {
+        throw new UnauthorizedException('Email not verified');
+      }
       return this.generateToken(user);
     }
     throw new UnauthorizedException('Invalid credentials');
