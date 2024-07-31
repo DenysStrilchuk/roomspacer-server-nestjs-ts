@@ -9,7 +9,8 @@ async function bootstrap() {
 
   // Додайте налаштування CORS
   app.enableCors({
-    origin: 'http://localhost:3001',
+    origin: 'http://localhost:3000', // Ваш фронтенд адрес
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
 
@@ -17,6 +18,6 @@ async function bootstrap() {
   app.useGlobalInterceptors(new TransformInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  await app.listen(3000);
+  await app.listen(3001);
 }
 void bootstrap();
