@@ -90,11 +90,14 @@ export class FirebaseService {
   }
 
   async sendPasswordResetEmail(email: string): Promise<void> {
-    const link = await this.getAuth().generatePasswordResetLink(email);
+    const user = await this.getAuth().getUserByEmail(email);
+    const token = await this.getAuth().createCustomToken(user.uid);
+    const resetPasswordUrl = `http://localhost:3000/auth/reset-password/${token}`;
+
     await this.sendEmail(
       email,
       'Password Reset',
-      `Reset your password: ${link}`,
+      `Reset your password by clicking the following link: ${resetPasswordUrl}`,
     );
   }
 

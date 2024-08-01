@@ -8,7 +8,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { FirebaseService } from '../ config/firebase.config';
+import { FirebaseModule } from '../ config/firebase.module';
 
 @Module({
   imports: [
@@ -23,14 +23,9 @@ import { FirebaseService } from '../ config/firebase.config';
         signOptions: { expiresIn: '60m' },
       }),
     }),
+    FirebaseModule, // Додано імпорт
   ],
-  providers: [
-    AuthService,
-    JwtStrategy,
-    GoogleStrategy,
-    FirebaseService,
-    JwtAuthGuard,
-  ],
+  providers: [AuthService, JwtStrategy, GoogleStrategy, JwtAuthGuard],
   controllers: [AuthController],
   exports: [AuthService, JwtAuthGuard],
 })

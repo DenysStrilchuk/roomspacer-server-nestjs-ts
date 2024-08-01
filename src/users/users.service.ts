@@ -35,6 +35,15 @@ export class UsersService {
     return snapshot.docs[0].data() as User;
   }
 
+  async findById(id: string): Promise<User> {
+    const docRef = this.collection.doc(id);
+    const doc = await docRef.get();
+    if (!doc.exists) {
+      return null;
+    }
+    return doc.data() as User;
+  }
+
   async getUserRecordByEmail(email: string) {
     return await this.firebaseService.getAuth().getUserByEmail(email);
   }

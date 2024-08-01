@@ -56,14 +56,17 @@ export class AuthService {
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
-    const decodedToken = await this.firebaseService
-      .getAuth()
-      .verifyIdToken(token);
-    const user = await this.usersService.findByEmail(decodedToken.email);
+    const decodedToken = await this.jwtService.verify(token, {
+      algorithms: ['HS256'],
+    });
+    const user = await this.usersService.findById(decodedToken.sub);
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    await this.usersService.updatePassword(user.id, newPassword);
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.usersService.updatePassword(user.id, hashedPassword);
   }
 
   private generateToken(user: any) {
