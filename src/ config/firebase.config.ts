@@ -98,6 +98,10 @@ export class FirebaseService {
     );
   }
 
+  async verifyIdToken(token: string): Promise<admin.auth.DecodedIdToken> {
+    return await this.getAuth().verifyIdToken(token);
+  }
+
   async sendEmailChangeVerification(
     userId: string,
     newEmail: string,

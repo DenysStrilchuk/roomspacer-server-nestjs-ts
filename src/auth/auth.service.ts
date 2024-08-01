@@ -8,14 +8,15 @@ import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
+import { FirebaseService } from '../ config/firebase.config';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly firebaseService: FirebaseService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -46,16 +47,23 @@ export class AuthService {
     throw new UnauthorizedException('Invalid credentials');
   }
 
-  async resetPassword(resetPasswordDto: ResetPasswordDto) {
-    const user = await this.usersService.findByEmail(resetPasswordDto.email);
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.usersService.findByEmail(email);
     if (!user) {
       throw new NotFoundException('User not found');
     }
+    await this.firebaseService.sendPasswordResetEmail(email);
+  }
 
-    const hashedPassword = await bcrypt.hash(resetPasswordDto.password, 10);
-    await this.usersService.updatePassword(user.id, hashedPassword);
-
-    return { message: 'Password updated successfully' };
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const decodedToken = await this.firebaseService
+      .getAuth()
+      .verifyIdToken(token);
+    const user = await this.usersService.findByEmail(decodedToken.email);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    await this.usersService.updatePassword(user.id, newPassword);
   }
 
   private generateToken(user: any) {
