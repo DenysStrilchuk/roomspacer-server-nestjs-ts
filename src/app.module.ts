@@ -1,31 +1,17 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AuthService } from './auth/auth.service';
-import { AuthController } from './auth/auth.controller';
+import { ConfigModule } from '@nestjs/config';
+import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
-import { FirebaseModule } from './ config/firebase.module';
+import { FirebaseModule } from './firebase/firebase.module';
 
 @Module({
   imports: [
-    UsersModule,
     ConfigModule.forRoot({
-      isGlobal: true,
+      isGlobal: true, // робить ConfigModule доступним глобально
     }),
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: '60m',
-          algorithm: 'HS256',
-        },
-      }),
-    }),
-    FirebaseModule, // Додано імпорт
+    AuthModule,
+    UsersModule,
+    FirebaseModule,
   ],
-  providers: [AuthService],
-  controllers: [AuthController],
 })
 export class AppModule {}
