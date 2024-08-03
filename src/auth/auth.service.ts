@@ -5,40 +5,72 @@ import { UserRecord } from 'firebase-admin/lib/auth';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginUserDto } from '../users/dto/login-user.dto';
 import { UpdatePasswordDto } from '../users/dto/update-password.dto';
+import { MailService } from '../mail/mail.service';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
-  // Метод для реєстрації користувача
-  async register(createUserDto: CreateUserDto): Promise<UserRecord> {
-    const { email, password } = createUserDto;
+  constructor(private readonly mailService: MailService) {}
 
-    // Хешування пароля
+  async register(createUserDto: CreateUserDto): Promise<UserRecord> {
+    const { name, email, password } = createUserDto;
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Створення користувача у Firebase Authentication з незахешованим паролем
     const userRecord = await admin.auth().createUser({
+      displayName: name,
       email,
-      password, // Використовуємо незахешований пароль для створення користувача у Firebase
+      password,
     });
 
-    // Збереження захешованого пароля в Firestore
+    const confirmationToken = crypto.randomBytes(32).toString('hex');
+
     await admin.firestore().collection('users').doc(userRecord.uid).set({
+      name,
       email,
-      password: hashedPassword, // Зберігаємо захешований пароль у Firestore
+      password: hashedPassword,
+      emailConfirmed: false,
+      confirmationToken,
     });
+
+    const verificationLink = await admin
+      .auth()
+      .generateEmailVerificationLink(email);
+
+    await this.mailService.sendConfirmationEmail(email, verificationLink);
 
     return userRecord;
   }
 
+  async confirmEmail(token: string): Promise<void> {
+    const usersRef = admin.firestore().collection('users');
+    const snapshot = await usersRef
+      .where('confirmationToken', '==', token)
+      .get();
+
+    if (snapshot.empty) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+
+    const userDoc = snapshot.docs[0];
+    await userDoc.ref.update({
+      emailConfirmed: true,
+      confirmationToken: admin.firestore.FieldValue.delete(),
+    });
+  }
   // Метод для входу користувача
   async login(loginUserDto: LoginUserDto): Promise<string> {
     const { email, password } = loginUserDto;
 
     try {
-      // Отримання користувача за email з Firebase Authentication
+      // Отримати користувача за email з Firebase Authentication
       const user = await admin.auth().getUserByEmail(email);
 
-      // Отримання документа користувача з Firestore
+      // Перевірити, чи електронна пошта користувача підтверджена
+      if (!user.emailVerified) {
+        throw new UnauthorizedException('Електронна пошта не підтверджена');
+      }
+
+      // Отримати документ користувача з Firestore
       const userDoc = await admin
         .firestore()
         .collection('users')
@@ -49,20 +81,20 @@ export class AuthService {
       // Перевірка наявності даних користувача і пароля
       if (!userData || !userData.password) {
         throw new UnauthorizedException(
-          'User not found or password is missing',
+          'Користувача не знайдено або відсутній пароль',
         );
       }
 
       // Перевірка правильності пароля
       const isPasswordValid = await bcrypt.compare(password, userData.password);
       if (!isPasswordValid) {
-        throw new UnauthorizedException('Invalid credentials');
+        throw new UnauthorizedException('Невірний пароль');
       }
 
       // Створення кастомного токена
       return await admin.auth().createCustomToken(user.uid);
     } catch (error) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Невірні дані для входу');
     }
   }
 

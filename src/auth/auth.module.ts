@@ -7,6 +7,7 @@ import { JwtStrategy } from './jwt.strategy';
 import { FirebaseService } from '../firebase/firebase.service';
 import * as process from 'process';
 import { UsersService } from '../users/users.service';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { UsersService } from '../users/users.service';
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '60m' },
     }),
+    MailModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, FirebaseService, UsersService],

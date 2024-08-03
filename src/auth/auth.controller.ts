@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Body, UnauthorizedException, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginUserDto } from '../users/dto/login-user.dto';
@@ -7,6 +7,12 @@ import { UpdatePasswordDto } from '../users/dto/update-password.dto';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Get('confirm')
+  async confirmEmail(@Query('token') token: string) {
+    await this.authService.confirmEmail(token);
+    return { message: 'Email confirmed successfully' };
+  }
 
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto) {
