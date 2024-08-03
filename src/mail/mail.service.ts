@@ -19,7 +19,6 @@ export class MailService {
   }
 
   async sendConfirmationEmail(to: string, verificationLink: string) {
-
     const mailOptions = {
       from: '"Roomspacer" <roomspacerapp@gmail.com>',
       to,

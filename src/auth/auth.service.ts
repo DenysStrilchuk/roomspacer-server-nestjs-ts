@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import * as bcrypt from 'bcrypt';
 import { UserRecord } from 'firebase-admin/lib/auth';
@@ -10,6 +10,8 @@ import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(private readonly mailService: MailService) {}
 
   async register(createUserDto: CreateUserDto): Promise<UserRecord> {
@@ -32,9 +34,7 @@ export class AuthService {
       confirmationToken,
     });
 
-    const verificationLink = await admin
-      .auth()
-      .generateEmailVerificationLink(email);
+    const verificationLink = `http://localhost:3001/auth/confirm?token=${confirmationToken}`;
 
     await this.mailService.sendConfirmationEmail(email, verificationLink);
 
@@ -42,35 +42,38 @@ export class AuthService {
   }
 
   async confirmEmail(token: string): Promise<void> {
+    this.logger.log(`Confirming email with token: ${token}`);
     const usersRef = admin.firestore().collection('users');
     const snapshot = await usersRef
       .where('confirmationToken', '==', token)
       .get();
 
     if (snapshot.empty) {
+      this.logger.error('Invalid or expired token');
       throw new UnauthorizedException('Invalid or expired token');
     }
 
     const userDoc = snapshot.docs[0];
-    await userDoc.ref.update({
-      emailConfirmed: true,
-      confirmationToken: admin.firestore.FieldValue.delete(),
-    });
+    this.logger.log('User found:', userDoc.data());
+
+    try {
+      await userDoc.ref.update({
+        emailConfirmed: true,
+        confirmationToken: admin.firestore.FieldValue.delete(),
+      });
+      this.logger.log('Email confirmed successfully');
+    } catch (error) {
+      this.logger.error('Error updating user document:', error);
+      throw new UnauthorizedException('Error confirming email');
+    }
   }
-  // Метод для входу користувача
+
   async login(loginUserDto: LoginUserDto): Promise<string> {
     const { email, password } = loginUserDto;
 
     try {
-      // Отримати користувача за email з Firebase Authentication
       const user = await admin.auth().getUserByEmail(email);
 
-      // Перевірити, чи електронна пошта користувача підтверджена
-      if (!user.emailVerified) {
-        throw new UnauthorizedException('Електронна пошта не підтверджена');
-      }
-
-      // Отримати документ користувача з Firestore
       const userDoc = await admin
         .firestore()
         .collection('users')
@@ -78,37 +81,32 @@ export class AuthService {
         .get();
       const userData = userDoc.data();
 
-      // Перевірка наявності даних користувача і пароля
       if (!userData || !userData.password) {
-        throw new UnauthorizedException(
-          'Користувача не знайдено або відсутній пароль',
-        );
+        throw new UnauthorizedException('User not found or missing password');
       }
 
-      // Перевірка правильності пароля
+      if (!userData.emailConfirmed) {
+        throw new UnauthorizedException('Email not confirmed');
+      }
+
       const isPasswordValid = await bcrypt.compare(password, userData.password);
       if (!isPasswordValid) {
-        throw new UnauthorizedException('Невірний пароль');
+        throw new UnauthorizedException('Invalid password');
       }
 
-      // Створення кастомного токена
       return await admin.auth().createCustomToken(user.uid);
     } catch (error) {
-      throw new UnauthorizedException('Невірні дані для входу');
+      throw new UnauthorizedException('Invalid login credentials');
     }
   }
 
-  // Метод для оновлення пароля
   async updatePassword(updatePasswordDto: UpdatePasswordDto): Promise<void> {
     const { uid, newPassword } = updatePasswordDto;
 
-    // Хешування нового пароля
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Оновлення пароля в Firebase Authentication
     await admin.auth().updateUser(uid, { password: newPassword });
 
-    // Оновлення захешованого пароля в Firestore
     await admin.firestore().collection('users').doc(uid).update({
       password: hashedPassword,
     });
