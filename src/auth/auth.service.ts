@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  Logger,
+  BadRequestException,
+} from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import * as bcrypt from 'bcrypt';
 import { UserRecord } from 'firebase-admin/lib/auth';
@@ -18,27 +23,40 @@ export class AuthService {
     const { name, email, password } = createUserDto;
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const userRecord = await admin.auth().createUser({
-      displayName: name,
-      email,
-      password,
-    });
+    try {
+      const userRecord = await admin.auth().createUser({
+        displayName: name,
+        email,
+        password,
+      });
 
-    const confirmationToken = crypto.randomBytes(32).toString('hex');
+      const confirmationToken = crypto.randomBytes(32).toString('hex');
 
-    await admin.firestore().collection('users').doc(userRecord.uid).set({
-      name,
-      email,
-      password: hashedPassword,
-      emailConfirmed: false,
-      confirmationToken,
-    });
+      await admin.firestore().collection('users').doc(userRecord.uid).set({
+        name,
+        email,
+        password: hashedPassword,
+        emailConfirmed: false,
+        confirmationToken,
+      });
 
-    const verificationLink = `http://localhost:3001/auth/confirm?token=${confirmationToken}`;
+      const verificationLink = `http://localhost:3001/auth/confirm?token=${confirmationToken}`;
 
-    await this.mailService.sendConfirmationEmail(email, name, verificationLink);
+      await this.mailService.sendConfirmationEmail(
+        email,
+        name,
+        verificationLink,
+      );
 
-    return userRecord;
+      return userRecord;
+    } catch (error) {
+      if (error.code === 'auth/email-already-exists') {
+        throw new BadRequestException(
+          'The email address is already in use by another account.',
+        );
+      }
+      throw error;
+    }
   }
 
   async confirmEmail(token: string): Promise<void> {
