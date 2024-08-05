@@ -50,4 +50,25 @@ export class MailService {
 
     await this.transporter.sendMail(mailOptions);
   }
+
+  async sendResetPasswordEmail(to: string, resetLink: string) {
+    const templatePath = path.resolve(
+      process.cwd(),
+      'src',
+      'templates',
+      'reset-password-email.template.html',
+    );
+    let htmlContent = fs.readFileSync(templatePath, 'utf8');
+
+    htmlContent = htmlContent.replace('{{ resetLink }}', resetLink);
+
+    const mailOptions = {
+      from: '"Roomspacer" <roomspacerapp@gmail.com>',
+      to,
+      subject: 'Password Reset',
+      html: htmlContent,
+    };
+
+    await this.transporter.sendMail(mailOptions);
+  }
 }

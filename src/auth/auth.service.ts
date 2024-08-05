@@ -2,18 +2,23 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import * as bcrypt from 'bcrypt';
 import { UserRecord } from 'firebase-admin/lib/auth';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginUserDto } from '../users/dto/login-user.dto';
-import { UpdatePasswordDto } from '../users/dto/update-password.dto';
+import { ResetPasswordDto } from '../users/dto/reset-password.dto';
 import { MailService } from '../mail/mail.service';
 import * as crypto from 'crypto';
+import { ForgotPasswordDto } from '../users/dto/forgot-password.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(private readonly mailService: MailService) {}
 
   async register(createUserDto: CreateUserDto): Promise<UserRecord> {
@@ -47,12 +52,13 @@ export class AuthService {
 
       return userRecord;
     } catch (error) {
+      this.logger.error('Error registering user', error.stack);
       if (error.code === 'auth/email-already-exists') {
         throw new BadRequestException(
           'The email address is already in use by another account.',
         );
       }
-      throw error;
+      throw new InternalServerErrorException('Internal server error');
     }
   }
 
@@ -74,6 +80,7 @@ export class AuthService {
         confirmationToken: admin.firestore.FieldValue.delete(),
       });
     } catch (error) {
+      this.logger.error('Error confirming email', error.stack);
       throw new UnauthorizedException('Error confirming email');
     }
   }
@@ -106,19 +113,63 @@ export class AuthService {
 
       return await admin.auth().createCustomToken(user.uid);
     } catch (error) {
+      this.logger.error('Error during login', error.stack);
       throw new UnauthorizedException('Invalid login credentials');
     }
   }
 
-  async updatePassword(updatePasswordDto: UpdatePasswordDto): Promise<void> {
-    const { uid, newPassword } = updatePasswordDto;
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<void> {
+    const { email } = forgotPasswordDto;
+
+    try {
+      const user = await admin.auth().getUserByEmail(email);
+
+      const resetToken = crypto.randomBytes(32).toString('hex');
+
+      await admin
+        .firestore()
+        .collection('users')
+        .doc(user.uid)
+        .update({
+          resetPasswordToken: resetToken,
+          resetPasswordExpires: admin.firestore.Timestamp.fromDate(
+            new Date(Date.now() + 3600000), // 1 hour
+          ),
+        });
+
+      const resetLink = `http://localhost:3000/auth/reset-password/${resetToken}`;
+
+      await this.mailService.sendResetPasswordEmail(email, resetLink);
+    } catch (error) {
+      this.logger.error('Error during forgot password process', error.stack);
+      throw new InternalServerErrorException('Something went wrong');
+    }
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<void> {
+    const { token, newPassword } = resetPasswordDto;
+
+    const usersRef = admin.firestore().collection('users');
+    const snapshot = await usersRef
+      .where('resetPasswordToken', '==', token)
+      .where('resetPasswordExpires', '>', admin.firestore.Timestamp.now())
+      .get();
+
+    if (snapshot.empty) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+
+    const userDoc = snapshot.docs[0];
+    const uid = userDoc.id;
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     await admin.auth().updateUser(uid, { password: newPassword });
 
-    await admin.firestore().collection('users').doc(uid).update({
+    await userDoc.ref.update({
       password: hashedPassword,
+      resetPasswordToken: admin.firestore.FieldValue.delete(),
+      resetPasswordExpires: admin.firestore.FieldValue.delete(),
     });
   }
 }
