@@ -1,7 +1,6 @@
 import {
   Injectable,
   UnauthorizedException,
-  Logger,
   BadRequestException,
 } from '@nestjs/common';
 import * as admin from 'firebase-admin';
@@ -15,8 +14,6 @@ import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
-
   constructor(private readonly mailService: MailService) {}
 
   async register(createUserDto: CreateUserDto): Promise<UserRecord> {
@@ -60,28 +57,23 @@ export class AuthService {
   }
 
   async confirmEmail(token: string): Promise<void> {
-    this.logger.log(`Confirming email with token: ${token}`);
     const usersRef = admin.firestore().collection('users');
     const snapshot = await usersRef
       .where('confirmationToken', '==', token)
       .get();
 
     if (snapshot.empty) {
-      this.logger.error('Invalid or expired token');
       throw new UnauthorizedException('Invalid or expired token');
     }
 
     const userDoc = snapshot.docs[0];
-    this.logger.log('User found:', userDoc.data());
 
     try {
       await userDoc.ref.update({
         emailConfirmed: true,
         confirmationToken: admin.firestore.FieldValue.delete(),
       });
-      this.logger.log('Email confirmed successfully');
     } catch (error) {
-      this.logger.error('Error updating user document:', error);
       throw new UnauthorizedException('Error confirming email');
     }
   }

@@ -4,9 +4,9 @@ import {
   Post,
   Body,
   UnauthorizedException,
-  Logger,
   BadRequestException,
-  InternalServerErrorException, Param,
+  InternalServerErrorException,
+  Param,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
@@ -15,8 +15,6 @@ import { UpdatePasswordDto } from '../users/dto/update-password.dto';
 
 @Controller('auth')
 export class AuthController {
-  private readonly logger = new Logger(AuthController.name);
-
   constructor(private readonly authService: AuthService) {}
 
   @Get('confirm/:token')
