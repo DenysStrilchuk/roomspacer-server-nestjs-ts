@@ -53,12 +53,20 @@ export class AuthService {
       return userRecord;
     } catch (error) {
       this.logger.error('Error registering user', error.stack);
+
       if (error.code === 'auth/email-already-exists') {
         throw new BadRequestException(
-          'The email address is already in use by another account.',
+          'Ця електронна адреса вже використовується.',
         );
+      } else if (error.code === 'auth/invalid-email') {
+        throw new BadRequestException(
+          'Неправильний формат електронної адреси.',
+        );
+      } else if (error.code === 'auth/weak-password') {
+        throw new BadRequestException('Пароль занадто слабкий.');
+      } else {
+        throw new InternalServerErrorException('Внутрішня помилка сервера');
       }
-      throw new InternalServerErrorException('Internal server error');
     }
   }
 
@@ -108,12 +116,16 @@ export class AuthService {
 
       const isPasswordValid = await bcrypt.compare(password, userData.password);
       if (!isPasswordValid) {
+        // Тільки логувати помилку у випадку невірного паролю
         throw new UnauthorizedException('Invalid password');
       }
 
       return await admin.auth().createCustomToken(user.uid);
     } catch (error) {
-      this.logger.error('Error during login', error.stack);
+      // Логувати тільки одну помилку
+      this.logger.error(`Login failed for email: ${email}`, error.stack);
+
+      // Повертати лише одне повідомлення про помилку
       throw new UnauthorizedException('Invalid login credentials');
     }
   }

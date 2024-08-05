@@ -50,8 +50,12 @@ export class AuthController {
       const token = await this.authService.login(loginUserDto);
       return { token };
     } catch (error) {
-      this.logger.error('Error during login', error.stack);
-      throw new UnauthorizedException(error.message);
+      if (error instanceof UnauthorizedException) {
+        this.logger.warn('Invalid login attempt');
+      } else {
+        this.logger.error('Error during login', error.stack);
+      }
+      throw new UnauthorizedException('Invalid login credentials');
     }
   }
 

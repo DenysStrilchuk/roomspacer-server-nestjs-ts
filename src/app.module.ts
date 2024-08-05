@@ -8,7 +8,7 @@ import { MailModule } from './mail/mail.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true, // робить ConfigModule доступним глобально
+      isGlobal: true,
     }),
     AuthModule,
     UsersModule,
