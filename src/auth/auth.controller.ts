@@ -4,10 +4,9 @@ import {
   Post,
   Body,
   UnauthorizedException,
-  Query,
   Logger,
   BadRequestException,
-  InternalServerErrorException,
+  InternalServerErrorException, Param,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
@@ -20,11 +19,13 @@ export class AuthController {
 
   constructor(private readonly authService: AuthService) {}
 
-  @Get('confirm')
-  async confirmEmail(@Query('token') token: string) {
-    this.logger.log(`Received token: ${token}`);
-    await this.authService.confirmEmail(token);
-    return { message: 'Email confirmed successfully' };
+  @Get('confirm/:token')
+  async confirmEmail(@Param('token') token: string): Promise<void> {
+    try {
+      await this.authService.confirmEmail(token);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
   }
 
   @Post('register')

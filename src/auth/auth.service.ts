@@ -40,7 +40,7 @@ export class AuthService {
         confirmationToken,
       });
 
-      const verificationLink = `http://localhost:3001/auth/confirm?token=${confirmationToken}`;
+      const verificationLink = `http://localhost:3000/auth/confirm/${confirmationToken}`;
 
       await this.mailService.sendConfirmationEmail(
         email,
