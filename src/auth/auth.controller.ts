@@ -33,6 +33,10 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto) {
+    this.logger.debug(
+      'Received registration request with data:',
+      createUserDto,
+    );
     try {
       return await this.authService.register(createUserDto);
     } catch (error) {

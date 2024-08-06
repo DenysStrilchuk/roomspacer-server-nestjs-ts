@@ -55,17 +55,13 @@ export class AuthService {
       this.logger.error('Error registering user', error.stack);
 
       if (error.code === 'auth/email-already-exists') {
-        throw new BadRequestException(
-          'Ця електронна адреса вже використовується.',
-        );
+        throw new BadRequestException('This email address is already in use.');
       } else if (error.code === 'auth/invalid-email') {
-        throw new BadRequestException(
-          'Неправильний формат електронної адреси.',
-        );
+        throw new BadRequestException('Email address format is incorrect.');
       } else if (error.code === 'auth/weak-password') {
-        throw new BadRequestException('Пароль занадто слабкий.');
+        throw new BadRequestException('The password is too weak.');
       } else {
-        throw new InternalServerErrorException('Внутрішня помилка сервера');
+        throw new InternalServerErrorException('Internal server error');
       }
     }
   }
