@@ -33,16 +33,15 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto) {
-    this.logger.debug(
-      'Received registration request with data:',
-      createUserDto,
-    );
     try {
       return await this.authService.register(createUserDto);
     } catch (error) {
       this.logger.error('Error registering user', error.stack);
-      if (error instanceof BadRequestException) {
-        throw new BadRequestException(error.message);
+      if (
+        error instanceof BadRequestException ||
+        error instanceof UnauthorizedException
+      ) {
+        throw error;
       }
       throw new InternalServerErrorException('Something went wrong');
     }
