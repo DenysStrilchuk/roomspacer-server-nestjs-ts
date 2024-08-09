@@ -8,6 +8,7 @@ import { FirebaseService } from '../firebase/firebase.service';
 import * as process from 'process';
 import { UsersService } from '../users/users.service';
 import { MailModule } from '../mail/mail.module';
+import { GoogleStrategy } from '../googleAuth/google.strategy';
 
 @Module({
   imports: [
@@ -19,6 +20,6 @@ import { MailModule } from '../mail/mail.module';
     MailModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, FirebaseService, UsersService],
+  providers: [AuthService, JwtStrategy, GoogleStrategy, FirebaseService, UsersService],
 })
 export class AuthModule {}
