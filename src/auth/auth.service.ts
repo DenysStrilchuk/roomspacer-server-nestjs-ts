@@ -180,39 +180,4 @@ export class AuthService {
       resetPasswordExpires: admin.firestore.FieldValue.delete(),
     });
   }
-
-  async googleLogin(user: any): Promise<string> {
-    const { email, firstName, lastName } = user;
-
-    try {
-      // Перевіряємо, чи існує користувач з таким email
-      let userRecord;
-      try {
-        userRecord = await admin.auth().getUserByEmail(email);
-      } catch (error) {
-        if (error.code === 'auth/user-not-found') {
-          // Якщо користувача не існує, створюємо його
-          userRecord = await admin.auth().createUser({
-            email,
-            displayName: `${firstName} ${lastName}`,
-          });
-
-          await admin.firestore().collection('users').doc(userRecord.uid).set({
-            email,
-            name: `${firstName} ${lastName}`,
-            emailConfirmed: true, // Google користувачі автоматично підтверджуються
-          });
-        } else {
-          throw error;
-        }
-      }
-
-      // Генеруємо JWT токен для користувача
-      return await admin.auth().createCustomToken(userRecord.uid);
-    } catch (error) {
-      this.logger.error('Error during Google login', error.stack);
-      throw new InternalServerErrorException('Something went wrong during Google login');
-    }
-  }
-
 }

@@ -7,14 +7,13 @@ import {
   BadRequestException,
   InternalServerErrorException,
   Param,
-  Logger, UseGuards, Req,
+  Logger,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginUserDto } from '../users/dto/login-user.dto';
 import { ResetPasswordDto } from '../users/dto/reset-password.dto';
 import { ForgotPasswordDto } from '../users/dto/forgot-password.dto';
-import { GoogleAuthGuard } from '../googleAuth/google-auth.quard';
 
 @Controller('auth')
 export class AuthController {
@@ -30,23 +29,6 @@ export class AuthController {
       this.logger.error('Error confirming email', error.stack);
       throw new UnauthorizedException('Invalid or expired token');
     }
-  }
-
-  @Get('google')
-  @UseGuards(GoogleAuthGuard)
-  async googleAuth(@Req() req) {
-    // Initiates the Google OAuth2 login flow
-  }
-
-  @Get('google/callback')
-  @UseGuards(GoogleAuthGuard)
-  async googleAuthRedirect(@Req() req) {
-    const user = req.user;
-    const token = await this.authService.googleLogin(user);
-    return {
-      message: 'Google login successful',
-      token,
-    };
   }
 
   @Post('register')
