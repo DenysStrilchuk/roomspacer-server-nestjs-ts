@@ -9,7 +9,7 @@ import {
   Param,
   Logger,
 } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { AuthService, ILoginResponse } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginUserDto } from '../users/dto/login-user.dto';
 import { ResetPasswordDto } from '../users/dto/reset-password.dto';
@@ -31,18 +31,19 @@ export class AuthController {
     }
   }
 
+  // auth.controller.ts
+
   @Post('register-with-google')
-  async registerWithGoogle(@Body('idToken') idToken: string) {
+  async registerWithGoogle(@Body('idToken') idToken: string): Promise<ILoginResponse> {
     try {
       return await this.authService.registerWithGoogle(idToken);
     } catch (error) {
-      this.logger.error('Error registering with Google', error.stack);
-      throw new InternalServerErrorException('Registration with Google failed');
+      throw new InternalServerErrorException('Failed to register with Google');
     }
   }
 
   @Post('login-with-google')
-  async loginWithGoogle(@Body('idToken') idToken: string) {
+  async loginWithGoogle(@Body('idToken') idToken: string): Promise<ILoginResponse> {
     try {
       return await this.authService.loginWithGoogle(idToken);
     } catch (error) {

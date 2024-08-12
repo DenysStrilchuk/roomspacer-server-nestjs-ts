@@ -15,6 +15,16 @@ import { MailService } from '../mail/mail.service';
 import * as crypto from 'crypto';
 import { ForgotPasswordDto } from '../users/dto/forgot-password.dto';
 
+export interface ILoginResponse {
+  user: {
+    uid: string;
+    email: string;
+    name?: string;
+    picture?: string;
+  };
+  token: string;
+}
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -178,39 +188,66 @@ export class AuthService {
     });
   }
 
-  async registerWithGoogle(idToken: string) {
+  async registerWithGoogle(idToken: string): Promise<ILoginResponse> {
     const decodedToken = await this.verifyGoogleToken(idToken);
-    const { uid, name, email } = decodedToken;
-
-    let userRecord: UserRecord;
+    this.logger.log(
+      `Decoded token for Google registration: ${JSON.stringify(decodedToken)}`
+    );
+    const { uid, name, email, picture } = decodedToken;
 
     try {
-      userRecord = await admin.auth().getUser(uid);
-    } catch (error) {
-      if (error.code === 'auth/user-not-found') {
-        // Створення нового користувача
-        userRecord = await admin.auth().createUser({
-          uid,
-          displayName: name,
-          email,
-        });
+      let userRecord;
+      try {
+        userRecord = await admin.auth().getUser(uid);
+      } catch (error) {
+        if (error.code === 'auth/user-not-found') {
+          userRecord = await admin.auth().createUser({
+            uid,
+            displayName: name,
+            email,
+          });
 
-        await admin.firestore().collection('users').doc(uid).set({
-          name,
-          email,
-          emailConfirmed: true,
-        });
-      } else {
-        throw new InternalServerErrorException('Failed to create user');
+          await admin.firestore().collection('users').doc(uid).set({
+            name,
+            email,
+            emailConfirmed: true,
+          });
+        } else {
+          throw new InternalServerErrorException('Failed to create user');
+        }
       }
+
+      // Saving the user in Firestore
+      const userRef = admin.firestore().collection('users').doc(uid);
+      await userRef.set({
+        uid,
+        email,
+        name,
+        picture,
+        // Additional fields can be added here
+      });
+
+      // Create a custom token for the user
+      const token = await this.createToken(userRecord);
+
+      // Return the response directly without storing in a variable
+      return {
+        user: {
+          uid: userRecord.uid,
+          email: decodedToken.email,
+          name: decodedToken.name,
+          picture: decodedToken.picture,
+        },
+        token: token,
+      };
+    } catch (error) {
+      this.logger.error('Failed to register with Google', error);
+      throw new InternalServerErrorException('Failed to register with Google');
     }
-
-    const token = await this.createToken(userRecord);
-
-    return { user: userRecord, token };
   }
 
-  async loginWithGoogle(idToken: string) {
+
+  async loginWithGoogle(idToken: string): Promise<ILoginResponse> {
     try {
       const decodedToken = await this.verifyGoogleToken(idToken);
       const { email } = decodedToken;
@@ -227,7 +264,15 @@ export class AuthService {
       }
 
       const token = await this.createToken(user);
-      return { user, token };
+      return {
+        user: {
+          uid: user.uid,
+          email: user.email,
+          name: user.displayName,
+          picture: user.photoURL,
+        },
+        token: token,
+      };
     } catch (error) {
       this.logger.error('Login with Google failed', error.stack);
       throw new UnauthorizedException('Login with Google failed');
@@ -236,7 +281,12 @@ export class AuthService {
 
   async createToken(user: admin.auth.UserRecord): Promise<string> {
     try {
-      return await admin.auth().createCustomToken(user.uid);
+      this.logger.log(`Creating token for user with UID: ${user.uid}`);
+      const token = await admin.auth().createCustomToken(user.uid);
+      this.logger.log(
+        `Token created successfully for user with UID: ${user.uid}`,
+      );
+      return token;
     } catch (error) {
       this.logger.error('Error creating custom token', error.stack);
       throw new InternalServerErrorException('Could not create token');
@@ -245,9 +295,17 @@ export class AuthService {
 
   async verifyGoogleToken(idToken: string): Promise<admin.auth.DecodedIdToken> {
     try {
-      return await admin.auth().verifyIdToken(idToken);
+      this.logger.log('Verifying Google token');
+      const decodedToken = await admin.auth().verifyIdToken(idToken);
+      this.logger.log(
+        `Google token verified successfully: ${JSON.stringify(decodedToken)}`,
+      );
+      return decodedToken;
     } catch (error) {
-      this.logger.error('Error verifying Google token', error.stack);
+      this.logger.error(
+        `Error verifying Google token for idToken: ${idToken}`,
+        error.stack,
+      );
       throw new UnauthorizedException('Invalid Google token');
     }
   }
