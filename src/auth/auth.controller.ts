@@ -34,7 +34,9 @@ export class AuthController {
   // auth.controller.ts
 
   @Post('register-with-google')
-  async registerWithGoogle(@Body('idToken') idToken: string): Promise<ILoginResponse> {
+  async registerWithGoogle(
+    @Body('idToken') idToken: string,
+  ): Promise<ILoginResponse> {
     try {
       return await this.authService.registerWithGoogle(idToken);
     } catch (error) {
@@ -43,7 +45,9 @@ export class AuthController {
   }
 
   @Post('login-with-google')
-  async loginWithGoogle(@Body('idToken') idToken: string): Promise<ILoginResponse> {
+  async loginWithGoogle(
+    @Body('idToken') idToken: string,
+  ): Promise<ILoginResponse> {
     try {
       return await this.authService.loginWithGoogle(idToken);
     } catch (error) {
