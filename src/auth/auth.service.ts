@@ -262,8 +262,7 @@ export class AuthService {
 
   async createToken(user: admin.auth.UserRecord): Promise<string> {
     try {
-      const token = await admin.auth().createCustomToken(user.uid);
-      return token;
+      return await admin.auth().createCustomToken(user.uid);
     } catch (error) {
       throw new InternalServerErrorException('Could not create token');
     }
@@ -271,8 +270,7 @@ export class AuthService {
 
   async verifyGoogleToken(idToken: string): Promise<admin.auth.DecodedIdToken> {
     try {
-      const decodedToken = await admin.auth().verifyIdToken(idToken);
-      return decodedToken;
+      return await admin.auth().verifyIdToken(idToken);
     } catch (error) {
       throw new UnauthorizedException('Invalid Google token');
     }
