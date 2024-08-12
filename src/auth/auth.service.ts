@@ -112,16 +112,13 @@ export class AuthService {
 
       const isPasswordValid = await bcrypt.compare(password, userData.password);
       if (!isPasswordValid) {
-        // Тільки логувати помилку у випадку невірного паролю
+        this.logger.warn(`Invalid password attempt for email: ${email}`);
         throw new UnauthorizedException('Invalid password');
       }
 
-      return await admin.auth().createCustomToken(user.uid);
+      return await this.createToken(user);
     } catch (error) {
-      // Логувати тільки одну помилку
       this.logger.error(`Login failed for email: ${email}`, error.stack);
-
-      // Повертати лише одне повідомлення про помилку
       throw new UnauthorizedException('Invalid login credentials');
     }
   }
@@ -182,7 +179,7 @@ export class AuthService {
   }
 
   async registerWithGoogle(idToken: string) {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const decodedToken = await this.verifyGoogleToken(idToken);
     const { uid, name, email } = decodedToken;
 
     let userRecord: UserRecord;
@@ -208,25 +205,50 @@ export class AuthService {
       }
     }
 
-    const token = await admin.auth().createCustomToken(uid);
+    const token = await this.createToken(userRecord);
 
     return { user: userRecord, token };
   }
 
   async loginWithGoogle(idToken: string) {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const { uid } = decodedToken;
-
-    let userRecord: UserRecord;
-
     try {
-      userRecord = await admin.auth().getUser(uid);
+      const decodedToken = await this.verifyGoogleToken(idToken);
+      const { email } = decodedToken;
+
+      const user = await admin.auth().getUserByEmail(email);
+      const userDoc = await admin
+        .firestore()
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+      if (!userDoc.exists) {
+        throw new BadRequestException('User not found. Please register first.');
+      }
+
+      const token = await this.createToken(user);
+      return { user, token };
     } catch (error) {
-      throw new UnauthorizedException('User not found');
+      this.logger.error('Login with Google failed', error.stack);
+      throw new UnauthorizedException('Login with Google failed');
     }
+  }
 
-    const token = await admin.auth().createCustomToken(uid);
+  async createToken(user: admin.auth.UserRecord): Promise<string> {
+    try {
+      return await admin.auth().createCustomToken(user.uid);
+    } catch (error) {
+      this.logger.error('Error creating custom token', error.stack);
+      throw new InternalServerErrorException('Could not create token');
+    }
+  }
 
-    return { user: userRecord, token };
+  async verifyGoogleToken(idToken: string): Promise<admin.auth.DecodedIdToken> {
+    try {
+      return await admin.auth().verifyIdToken(idToken);
+    } catch (error) {
+      this.logger.error('Error verifying Google token', error.stack);
+      throw new UnauthorizedException('Invalid Google token');
+    }
   }
 }

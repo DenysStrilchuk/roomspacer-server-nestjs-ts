@@ -47,7 +47,7 @@ export class AuthController {
       return await this.authService.loginWithGoogle(idToken);
     } catch (error) {
       this.logger.error('Error logging in with Google', error.stack);
-      throw new UnauthorizedException('Login with Google failed');
+      throw new UnauthorizedException('Invalid login credentials');
     }
   }
 
@@ -73,11 +73,7 @@ export class AuthController {
       const token = await this.authService.login(loginUserDto);
       return { token };
     } catch (error) {
-      if (error instanceof UnauthorizedException) {
-        this.logger.warn('Invalid login attempt');
-      } else {
-        this.logger.error('Error during login', error.stack);
-      }
+      this.logger.error('Error during login', error.stack);
       throw new UnauthorizedException('Invalid login credentials');
     }
   }
