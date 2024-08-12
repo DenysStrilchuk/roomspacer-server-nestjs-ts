@@ -191,7 +191,7 @@ export class AuthService {
   async registerWithGoogle(idToken: string): Promise<ILoginResponse> {
     const decodedToken = await this.verifyGoogleToken(idToken);
     this.logger.log(
-      `Decoded token for Google registration: ${JSON.stringify(decodedToken)}`
+      `Decoded token for Google registration: ${JSON.stringify(decodedToken)}`,
     );
     const { uid, name, email, picture } = decodedToken;
 
@@ -245,7 +245,6 @@ export class AuthService {
       throw new InternalServerErrorException('Failed to register with Google');
     }
   }
-
 
   async loginWithGoogle(idToken: string): Promise<ILoginResponse> {
     try {
