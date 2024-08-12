@@ -31,6 +31,27 @@ export class AuthController {
     }
   }
 
+  @Post('register-with-google')
+  async registerWithGoogle(@Body('idToken') idToken: string) {
+    try {
+      return await this.authService.registerWithGoogle(idToken);
+    } catch (error) {
+      this.logger.error('Error registering with Google', error.stack);
+      throw new InternalServerErrorException('Registration with Google failed');
+    }
+  }
+
+  @Post('login-with-google')
+  async loginWithGoogle(@Body('idToken') idToken: string) {
+    try {
+      return await this.authService.loginWithGoogle(idToken);
+    } catch (error) {
+      this.logger.error('Error logging in with Google', error.stack);
+      throw new UnauthorizedException('Login with Google failed');
+    }
+  }
+
+
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto) {
     try {

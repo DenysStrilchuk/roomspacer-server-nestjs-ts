@@ -180,4 +180,53 @@ export class AuthService {
       resetPasswordExpires: admin.firestore.FieldValue.delete(),
     });
   }
+
+  async registerWithGoogle(idToken: string) {
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const { uid, name, email } = decodedToken;
+
+    let userRecord: UserRecord;
+
+    try {
+      userRecord = await admin.auth().getUser(uid);
+    } catch (error) {
+      if (error.code === 'auth/user-not-found') {
+        // Створення нового користувача
+        userRecord = await admin.auth().createUser({
+          uid,
+          displayName: name,
+          email,
+        });
+
+        await admin.firestore().collection('users').doc(uid).set({
+          name,
+          email,
+          emailConfirmed: true,
+        });
+      } else {
+        throw new InternalServerErrorException('Failed to create user');
+      }
+    }
+
+    const token = await admin.auth().createCustomToken(uid);
+
+    return { user: userRecord, token };
+  }
+
+  async loginWithGoogle(idToken: string) {
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const { uid } = decodedToken;
+
+    let userRecord: UserRecord;
+
+    try {
+      userRecord = await admin.auth().getUser(uid);
+    } catch (error) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const token = await admin.auth().createCustomToken(uid);
+
+    return { user: userRecord, token };
+  }
 }
