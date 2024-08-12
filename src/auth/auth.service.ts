@@ -3,7 +3,6 @@ import {
   UnauthorizedException,
   BadRequestException,
   InternalServerErrorException,
-  Logger,
 } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import * as bcrypt from 'bcrypt';
@@ -27,8 +26,6 @@ export interface ILoginResponse {
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
-
   constructor(private readonly mailService: MailService) {}
 
   async register(createUserDto: CreateUserDto): Promise<UserRecord> {
@@ -62,8 +59,6 @@ export class AuthService {
 
       return userRecord;
     } catch (error) {
-      this.logger.error('Error registering user', error.stack);
-
       if (error.code === 'auth/email-already-exists') {
         throw new BadRequestException('This email address is already in use.');
       } else if (error.code === 'auth/invalid-email') {
@@ -94,7 +89,6 @@ export class AuthService {
         confirmationToken: admin.firestore.FieldValue.delete(),
       });
     } catch (error) {
-      this.logger.error('Error confirming email', error.stack);
       throw new UnauthorizedException('Error confirming email');
     }
   }
@@ -122,13 +116,11 @@ export class AuthService {
 
       const isPasswordValid = await bcrypt.compare(password, userData.password);
       if (!isPasswordValid) {
-        this.logger.warn(`Invalid password attempt for email: ${email}`);
         throw new UnauthorizedException('Invalid password');
       }
 
       return await this.createToken(user);
     } catch (error) {
-      this.logger.error(`Login failed for email: ${email}`, error.stack);
       throw new UnauthorizedException('Invalid login credentials');
     }
   }
@@ -156,7 +148,6 @@ export class AuthService {
 
       await this.mailService.sendResetPasswordEmail(email, resetLink);
     } catch (error) {
-      this.logger.error('Error during forgot password process', error.stack);
       throw new InternalServerErrorException('Something went wrong');
     }
   }
@@ -190,9 +181,6 @@ export class AuthService {
 
   async registerWithGoogle(idToken: string): Promise<ILoginResponse> {
     const decodedToken = await this.verifyGoogleToken(idToken);
-    this.logger.log(
-      `Decoded token for Google registration: ${JSON.stringify(decodedToken)}`,
-    );
     const { uid, name, email, picture } = decodedToken;
 
     try {
@@ -217,20 +205,16 @@ export class AuthService {
         }
       }
 
-      // Saving the user in Firestore
       const userRef = admin.firestore().collection('users').doc(uid);
       await userRef.set({
         uid,
         email,
         name,
         picture,
-        // Additional fields can be added here
       });
 
-      // Create a custom token for the user
       const token = await this.createToken(userRecord);
 
-      // Return the response directly without storing in a variable
       return {
         user: {
           uid: userRecord.uid,
@@ -241,7 +225,6 @@ export class AuthService {
         token: token,
       };
     } catch (error) {
-      this.logger.error('Failed to register with Google', error);
       throw new InternalServerErrorException('Failed to register with Google');
     }
   }
@@ -273,38 +256,24 @@ export class AuthService {
         token: token,
       };
     } catch (error) {
-      this.logger.error('Login with Google failed', error.stack);
       throw new UnauthorizedException('Login with Google failed');
     }
   }
 
   async createToken(user: admin.auth.UserRecord): Promise<string> {
     try {
-      this.logger.log(`Creating token for user with UID: ${user.uid}`);
       const token = await admin.auth().createCustomToken(user.uid);
-      this.logger.log(
-        `Token created successfully for user with UID: ${user.uid}`,
-      );
       return token;
     } catch (error) {
-      this.logger.error('Error creating custom token', error.stack);
       throw new InternalServerErrorException('Could not create token');
     }
   }
 
   async verifyGoogleToken(idToken: string): Promise<admin.auth.DecodedIdToken> {
     try {
-      this.logger.log('Verifying Google token');
       const decodedToken = await admin.auth().verifyIdToken(idToken);
-      this.logger.log(
-        `Google token verified successfully: ${JSON.stringify(decodedToken)}`,
-      );
       return decodedToken;
     } catch (error) {
-      this.logger.error(
-        `Error verifying Google token for idToken: ${idToken}`,
-        error.stack,
-      );
       throw new UnauthorizedException('Invalid Google token');
     }
   }

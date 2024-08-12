@@ -13,6 +13,10 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe()); // Додано для валідації
 
-  await app.listen(3001);
+  const port = 3001;
+  await app.listen(port);
+
+  console.log(`Server is running on http://localhost:${port}`); // Лог порту
 }
+
 void bootstrap();
