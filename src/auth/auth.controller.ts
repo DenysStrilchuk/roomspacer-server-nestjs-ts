@@ -51,7 +51,6 @@ export class AuthController {
     }
   }
 
-
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto) {
     try {
