@@ -172,9 +172,7 @@ export class AuthService {
         throw error;
       }
       if (error.code === 'auth/user-not-found') {
-        throw new BadRequestException(
-          'No user found with this email.',
-        );
+        throw new BadRequestException('No user found with this email.');
       }
       if (error.code === 'auth/invalid-email') {
         throw new BadRequestException('Email format is incorrect.');
