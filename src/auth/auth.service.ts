@@ -129,10 +129,28 @@ export class AuthService {
     const { email } = forgotPasswordDto;
 
     try {
+      // Отримуємо користувача за його email
       const user = await admin.auth().getUserByEmail(email);
 
+      // Отримуємо дані користувача з Firestore
+      const userDoc = await admin
+        .firestore()
+        .collection('users')
+        .doc(user.uid)
+        .get();
+      const userData = userDoc.data();
+
+      // Перевірка наявності користувача та його пароля
+      if (!userData || !userData.password) {
+        throw new BadRequestException(
+          'Цей користувач зареєстрований через Google і не може відновити пароль.',
+        );
+      }
+
+      // Генерація токена відновлення паролю
       const resetToken = crypto.randomBytes(32).toString('hex');
 
+      // Оновлення документу користувача в Firestore з токеном та часом його дії
       await admin
         .firestore()
         .collection('users')
@@ -140,15 +158,28 @@ export class AuthService {
         .update({
           resetPasswordToken: resetToken,
           resetPasswordExpires: admin.firestore.Timestamp.fromDate(
-            new Date(Date.now() + 3600000), // 1 hour
+            new Date(Date.now() + 3600000), // 1 година
           ),
         });
 
+      // Формування посилання для скидання паролю
       const resetLink = `http://localhost:3000/auth/reset-password/${resetToken}`;
 
+      // Відправка листа для скидання паролю
       await this.mailService.sendResetPasswordEmail(email, resetLink);
     } catch (error) {
-      throw new InternalServerErrorException('Something went wrong');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      if (error.code === 'auth/user-not-found') {
+        throw new BadRequestException(
+          'Користувача з такою поштою не знайдено.',
+        );
+      }
+      if (error.code === 'auth/invalid-email') {
+        throw new BadRequestException('Неправильний формат електронної пошти.');
+      }
+      throw new InternalServerErrorException('Щось пішло не так.');
     }
   }
 

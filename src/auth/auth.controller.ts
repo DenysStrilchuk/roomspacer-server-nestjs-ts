@@ -80,7 +80,13 @@ export class AuthController {
       await this.authService.forgotPassword(forgotPasswordDto);
       return { message: 'Reset password email sent successfully' };
     } catch (error) {
-      throw new InternalServerErrorException('Something went wrong');
+      if (
+        error instanceof BadRequestException ||
+        error instanceof InternalServerErrorException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Unexpected error occurred.');
     }
   }
 
