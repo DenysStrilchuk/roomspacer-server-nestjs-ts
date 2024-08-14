@@ -143,7 +143,7 @@ export class AuthService {
       // Перевірка наявності користувача та його пароля
       if (!userData || !userData.password) {
         throw new BadRequestException(
-          'Цей користувач зареєстрований через Google і не може відновити пароль.',
+          'This user is registered through Google and cannot reset their password.',
         );
       }
 
@@ -173,13 +173,13 @@ export class AuthService {
       }
       if (error.code === 'auth/user-not-found') {
         throw new BadRequestException(
-          'Користувача з такою поштою не знайдено.',
+          'No user found with this email.',
         );
       }
       if (error.code === 'auth/invalid-email') {
-        throw new BadRequestException('Неправильний формат електронної пошти.');
+        throw new BadRequestException('Email format is incorrect.');
       }
-      throw new InternalServerErrorException('Щось пішло не так.');
+      throw new InternalServerErrorException('Something went wrong.');
     }
   }
 
