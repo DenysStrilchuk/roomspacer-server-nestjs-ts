@@ -7,6 +7,7 @@ import {
   BadRequestException,
   InternalServerErrorException,
   Param,
+  Headers,
 } from '@nestjs/common';
 import { AuthService, ILoginResponse } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
@@ -22,6 +23,16 @@ export class AuthController {
   async confirmEmail(@Param('token') token: string): Promise<void> {
     try {
       await this.authService.confirmEmail(token);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+  }
+
+  @Get('check-token')
+  async checkToken(@Headers('Authorization') token: string) {
+    try {
+      const decodedToken = await this.authService.verifyToken(token);
+      return { isLogin: true, user: decodedToken };
     } catch (error) {
       throw new UnauthorizedException('Invalid or expired token');
     }

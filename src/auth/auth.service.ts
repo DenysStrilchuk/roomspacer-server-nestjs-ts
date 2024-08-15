@@ -304,4 +304,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid Google token');
     }
   }
+
+  async verifyToken(token: string): Promise<admin.auth.DecodedIdToken> {
+    try {
+      return await admin.auth().verifyIdToken(token);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid token');
+    }
+  }
 }
