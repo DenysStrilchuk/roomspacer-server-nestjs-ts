@@ -32,6 +32,10 @@ export class AuthController {
   async checkToken(@Headers('Authorization') token: string) {
     console.log('Received token for verification:', token); // Логування отриманого токена
 
+    if (token.startsWith('Bearer ')) {
+      token = token.slice(7, token.length); // Видаляємо "Bearer " з початку
+    }
+
     try {
       const decodedToken = await this.authService.verifyToken(token);
       console.log('Token verified successfully:', decodedToken); // Логування успішної перевірки

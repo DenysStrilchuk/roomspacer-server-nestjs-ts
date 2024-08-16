@@ -314,7 +314,7 @@ export class AuthService {
       return decodedToken;
     } catch (error) {
       console.error('Token verification failed:', error.message); // Логування помилки
-      throw new UnauthorizedException('Invalid token');
+      throw new UnauthorizedException('Token verification failed');
     }
   }
 }
