@@ -306,9 +306,14 @@ export class AuthService {
   }
 
   async verifyToken(token: string): Promise<admin.auth.DecodedIdToken> {
+    console.log('Verifying token:', token); // Логування початку перевірки токена
+
     try {
-      return await admin.auth().verifyIdToken(token);
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      console.log('Token verified successfully:', decodedToken); // Логування успішної перевірки
+      return decodedToken;
     } catch (error) {
+      console.error('Token verification failed:', error.message); // Логування помилки
       throw new UnauthorizedException('Invalid token');
     }
   }

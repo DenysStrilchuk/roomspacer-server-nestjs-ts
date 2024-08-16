@@ -28,12 +28,16 @@ export class AuthController {
     }
   }
 
-  @Get('check-token')
+  @Post('check-token')
   async checkToken(@Headers('Authorization') token: string) {
+    console.log('Received token for verification:', token); // Логування отриманого токена
+
     try {
       const decodedToken = await this.authService.verifyToken(token);
+      console.log('Token verified successfully:', decodedToken); // Логування успішної перевірки
       return { isLogin: true, user: decodedToken };
     } catch (error) {
+      console.error('Token verification failed:', error.message); // Логування помилки
       throw new UnauthorizedException('Invalid or expired token');
     }
   }
