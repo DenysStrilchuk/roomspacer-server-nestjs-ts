@@ -13,6 +13,7 @@ import { ResetPasswordDto } from '../users/dto/reset-password.dto';
 import { MailService } from '../mail/mail.service';
 import * as crypto from 'crypto';
 import { ForgotPasswordDto } from '../users/dto/forgot-password.dto';
+import { FirebaseService } from '../firebase/firebase.service';
 
 export interface ILoginResponse {
   user: {
@@ -26,7 +27,10 @@ export interface ILoginResponse {
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly mailService: MailService) {}
+  constructor(
+    private readonly firebaseService: FirebaseService, // Додайте FirebaseService
+    private readonly mailService: MailService,
+  ) {}
 
   async register(createUserDto: CreateUserDto): Promise<UserRecord> {
     const { name, email, password } = createUserDto;
@@ -93,7 +97,7 @@ export class AuthService {
     }
   }
 
-  async login(loginUserDto: LoginUserDto): Promise<string> {
+  async login(loginUserDto: LoginUserDto): Promise<void> {
     const { email, password } = loginUserDto;
 
     try {
@@ -119,7 +123,7 @@ export class AuthService {
         throw new UnauthorizedException('Invalid password');
       }
 
-      return await this.createToken(user);
+      // Тут більше не потрібно створювати токен, оскільки він вже створюється на фронтенді.
     } catch (error) {
       throw new UnauthorizedException('Invalid login credentials');
     }
@@ -242,8 +246,6 @@ export class AuthService {
         picture,
       });
 
-      const token = await this.createToken(userRecord);
-
       return {
         user: {
           uid: userRecord.uid,
@@ -251,7 +253,7 @@ export class AuthService {
           name: decodedToken.name,
           picture: decodedToken.picture,
         },
-        token: token,
+        token: idToken, // Повертаємо токен, отриманий з фронтенду
       };
     } catch (error) {
       throw new InternalServerErrorException('Failed to register with Google');
@@ -274,7 +276,6 @@ export class AuthService {
         throw new BadRequestException('User not found. Please register first.');
       }
 
-      const token = await this.createToken(user);
       return {
         user: {
           uid: user.uid,
@@ -282,18 +283,10 @@ export class AuthService {
           name: user.displayName,
           picture: user.photoURL,
         },
-        token: token,
+        token: idToken, // Повертаємо токен, отриманий з фронтенду
       };
     } catch (error) {
       throw new UnauthorizedException('Login with Google failed');
-    }
-  }
-
-  async createToken(user: admin.auth.UserRecord): Promise<string> {
-    try {
-      return await admin.auth().createCustomToken(user.uid);
-    } catch (error) {
-      throw new InternalServerErrorException('Could not create token');
     }
   }
 
@@ -305,15 +298,17 @@ export class AuthService {
     }
   }
 
-  async verifyToken(token: string): Promise<admin.auth.DecodedIdToken> {
-    console.log('Verifying token:', token); // Логування початку перевірки токена
+  async verifyToken(authHeader: string): Promise<admin.auth.DecodedIdToken> {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Invalid token format');
+    }
+
+    const token = authHeader.split(' ')[1]; // Отримуємо чистий токен
 
     try {
-      const decodedToken = await admin.auth().verifyIdToken(token);
-      console.log('Token verified successfully:', decodedToken); // Логування успішної перевірки
-      return decodedToken;
+      return await admin.auth().verifyIdToken(token);
     } catch (error) {
-      console.error('Token verification failed:', error.message); // Логування помилки
+      console.error('Token verification failed:', error.message);
       throw new UnauthorizedException('Token verification failed');
     }
   }
