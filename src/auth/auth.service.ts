@@ -97,10 +97,25 @@ export class AuthService {
     }
   }
 
-  async login(loginUserDto: LoginUserDto): Promise<void> {
-    const { email, password } = loginUserDto;
+  async login(loginUserDto: LoginUserDto): Promise<{ token: string }> {
+    const { email, password, token } = loginUserDto;
 
     try {
+      if (!token || typeof token !== 'string') {
+        console.error('Invalid or missing token:', token);
+        throw new UnauthorizedException('Invalid or missing token');
+      }
+
+      // Логування токена перед верифікацією
+      console.log('Received token:', token);
+
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      console.log('Decoded token:', decodedToken);
+
+      if (decodedToken.email !== email) {
+        throw new UnauthorizedException('Invalid token');
+      }
+
       const user = await admin.auth().getUserByEmail(email);
 
       const userDoc = await admin
@@ -114,17 +129,14 @@ export class AuthService {
         throw new UnauthorizedException('User not found or missing password');
       }
 
-      if (!userData.emailConfirmed) {
-        throw new UnauthorizedException('Email not confirmed');
-      }
-
       const isPasswordValid = await bcrypt.compare(password, userData.password);
       if (!isPasswordValid) {
         throw new UnauthorizedException('Invalid password');
       }
 
-      // Тут більше не потрібно створювати токен, оскільки він вже створюється на фронтенді.
+      return { token };
     } catch (error) {
+      console.error('Login error:', error);
       throw new UnauthorizedException('Invalid login credentials');
     }
   }
