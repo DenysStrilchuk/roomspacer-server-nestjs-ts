@@ -82,17 +82,13 @@ export class AuthController {
   @Post('login')
   async login(@Body() loginUserDto: LoginUserDto) {
     try {
-      // Викликаємо сервісний метод та отримуємо результат
       const { token } = await this.authService.login(loginUserDto);
 
-      // Повертаємо токен назад на фронтенд
       return { token };
-
     } catch (error) {
       throw new UnauthorizedException('Invalid login credentials');
     }
   }
-
 
   @Post('forgot-password')
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
