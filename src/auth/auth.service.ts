@@ -106,29 +106,26 @@ export class AuthService {
         throw new UnauthorizedException('Invalid or missing token');
       }
 
-      // Логування токена перед верифікацією
-      console.log('Received token:', token);
-
       const decodedToken = await admin.auth().verifyIdToken(token);
-      console.log('Decoded token:', decodedToken);
-
       if (decodedToken.email !== email) {
         throw new UnauthorizedException('Invalid token');
       }
 
       const user = await admin.auth().getUserByEmail(email);
 
-      const userDoc = await admin
-        .firestore()
-        .collection('users')
-        .doc(user.uid)
-        .get();
+      const userDoc = await admin.firestore().collection('users').doc(user.uid).get();
       const userData = userDoc.data();
 
-      if (!userData || !userData.password) {
-        throw new UnauthorizedException('User not found or missing password');
+      if (!userData) {
+        throw new UnauthorizedException('User not found');
       }
 
+      // Перевірка, чи підтверджена електронна пошта
+      if (!userData.emailConfirmed) {
+        throw new UnauthorizedException('Email not confirmed. Please check your inbox.');
+      }
+
+      // Перевірка правильності пароля
       const isPasswordValid = await bcrypt.compare(password, userData.password);
       if (!isPasswordValid) {
         throw new UnauthorizedException('Invalid password');
