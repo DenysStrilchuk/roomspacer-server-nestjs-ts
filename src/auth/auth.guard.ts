@@ -20,7 +20,6 @@ export class AuthGuard implements CanActivate {
     }
 
     try {
-      // Перевіряємо токен і додаємо дані про користувача до запиту
       request.user = await this.authService.verifyToken(token);
       return true;
     } catch (e) {
