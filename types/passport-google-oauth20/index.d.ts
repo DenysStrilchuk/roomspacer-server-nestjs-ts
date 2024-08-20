@@ -37,11 +37,22 @@ declare module 'passport-google-oauth20' {
   export class Strategy extends PassportStrategy {
     constructor(
       options: StrategyOptions,
-      verify: (accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback) => void,
+      verify: (
+        accessToken: string,
+        refreshToken: string,
+        profile: Profile,
+        done: VerifyCallback,
+      ) => void,
     );
     constructor(
       options: StrategyOptionsWithRequest,
-      verify: (req: Request, accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback) => void,
+      verify: (
+        req: Request,
+        accessToken: string,
+        refreshToken: string,
+        profile: Profile,
+        done: VerifyCallback,
+      ) => void,
     );
 
     name: string;

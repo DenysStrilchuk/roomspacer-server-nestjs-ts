@@ -8,16 +8,21 @@ import {
   InternalServerErrorException,
   Param,
   Headers,
+  Query,
 } from '@nestjs/common';
 import { AuthService, ILoginResponse } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginUserDto } from '../users/dto/login-user.dto';
 import { ResetPasswordDto } from '../users/dto/reset-password.dto';
 import { ForgotPasswordDto } from '../users/dto/forgot-password.dto';
+import { FirebaseService } from '../firebase/firebase.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly firebaseService: FirebaseService,
+  ) {}
 
   @Get('confirm/:token')
   async confirmEmail(@Param('token') token: string): Promise<void> {
@@ -25,6 +30,31 @@ export class AuthController {
       await this.authService.confirmEmail(token);
     } catch (error) {
       throw new UnauthorizedException('Invalid or expired token');
+    }
+  }
+
+  @Get('check-user-exists')
+  async checkUserExists(
+    @Query('email') email: string,
+  ): Promise<{ exists: boolean }> {
+    if (!email) {
+      throw new BadRequestException('Email is required');
+    }
+
+    try {
+      const user = await this.firebaseService.getAuth().getUserByEmail(email);
+      const userDoc = await this.firebaseService
+        .getFirestore()
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+      return { exists: userDoc.exists };
+    } catch (error) {
+      if (error.code === 'auth/user-not-found') {
+        return { exists: false };
+      }
+      throw new BadRequestException('Error checking user existence');
     }
   }
 

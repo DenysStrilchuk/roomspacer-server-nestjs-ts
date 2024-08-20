@@ -37,12 +37,16 @@ export class FirebaseService {
     return FirebaseService.firebaseApp.auth();
   }
 
+  getFirestore() {
+    return admin.firestore();
+  }
+
   async verifyIdToken(idToken: string): Promise<admin.auth.DecodedIdToken> {
     try {
       return await this.getAuth().verifyIdToken(idToken);
     } catch (error) {
       Logger.error('Error verifying ID token', error);
-      throw error; // або обробіть помилку відповідним чином
+      throw error;
     }
   }
 }

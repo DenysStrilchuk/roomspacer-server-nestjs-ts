@@ -277,7 +277,22 @@ export class AuthService {
       const decodedToken = await this.verifyGoogleToken(idToken);
       const { email } = decodedToken;
 
-      const user = await admin.auth().getUserByEmail(email);
+      // Перевіряємо, чи існує користувач з такою електронною поштою
+      let user;
+      try {
+        user = await admin.auth().getUserByEmail(email);
+      } catch (error) {
+        if (error.code === 'auth/user-not-found') {
+          // Якщо користувача не знайдено, повертаємо помилку
+          throw new BadRequestException(
+            'User not registered. Please sign up first.',
+          );
+        } else {
+          throw new UnauthorizedException('Login with Google failed');
+        }
+      }
+
+      // Отримуємо інформацію про користувача з Firestore
       const userDoc = await admin
         .firestore()
         .collection('users')
@@ -285,7 +300,9 @@ export class AuthService {
         .get();
 
       if (!userDoc.exists) {
-        throw new BadRequestException('User not found. Please register first.');
+        throw new BadRequestException(
+          'User not found in Firestore. Please register first.',
+        );
       }
 
       return {
