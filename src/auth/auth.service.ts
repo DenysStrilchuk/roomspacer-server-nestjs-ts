@@ -113,7 +113,11 @@ export class AuthService {
 
       const user = await admin.auth().getUserByEmail(email);
 
-      const userDoc = await admin.firestore().collection('users').doc(user.uid).get();
+      const userDoc = await admin
+        .firestore()
+        .collection('users')
+        .doc(user.uid)
+        .get();
       const userData = userDoc.data();
 
       if (!userData) {
@@ -122,7 +126,9 @@ export class AuthService {
 
       // Перевірка, чи підтверджена електронна пошта
       if (!userData.emailConfirmed) {
-        throw new UnauthorizedException('Email not confirmed. Please check your inbox.');
+        throw new UnauthorizedException(
+          'Email not confirmed. Please check your inbox.',
+        );
       }
 
       // Перевірка правильності пароля
