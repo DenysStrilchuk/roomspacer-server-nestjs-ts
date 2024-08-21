@@ -19,8 +19,8 @@ export class AuthGuard implements CanActivate {
     const token = authHeader.split(' ')[1];
 
     try {
-      const decodedToken = await admin.auth().verifyIdToken(token);
-      request.user = decodedToken; // Attach user data to the request
+      // Directly assign the result of verifyIdToken to request.user
+      request.user = await admin.auth().verifyIdToken(token);
       return true;
     } catch (error) {
       throw new UnauthorizedException('Invalid or expired token');
