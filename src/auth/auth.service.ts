@@ -19,7 +19,7 @@ import { ILoginResponse } from './interfaces/login-response.interface';
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly firebaseService: FirebaseService, // Додайте FirebaseService
+    private readonly firebaseService: FirebaseService,
     private readonly mailService: MailService,
   ) {}
 
@@ -122,7 +122,6 @@ export class AuthService {
         );
       }
 
-      // Перевірка правильності пароля
       const isPasswordValid = await bcrypt.compare(password, userData.password);
       if (!isPasswordValid) {
         throw new UnauthorizedException('Invalid password');
@@ -139,10 +138,8 @@ export class AuthService {
     const { email } = forgotPasswordDto;
 
     try {
-      // Отримуємо користувача за його email
       const user = await admin.auth().getUserByEmail(email);
 
-      // Отримуємо дані користувача з Firestore
       const userDoc = await admin
         .firestore()
         .collection('users')
@@ -150,17 +147,14 @@ export class AuthService {
         .get();
       const userData = userDoc.data();
 
-      // Перевірка наявності користувача та його пароля
       if (!userData || !userData.password) {
         throw new BadRequestException(
           'This user is registered through Google and cannot reset their password.',
         );
       }
 
-      // Генерація токена відновлення паролю
       const resetToken = crypto.randomBytes(32).toString('hex');
 
-      // Оновлення документу користувача в Firestore з токеном та часом його дії
       await admin
         .firestore()
         .collection('users')
@@ -172,7 +166,6 @@ export class AuthService {
           ),
         });
 
-      // Формування посилання для скидання паролю
       const resetLink = `http://localhost:3000/auth/reset-password/${resetToken}`;
 
       // Відправка листа для скидання паролю
