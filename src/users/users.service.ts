@@ -14,4 +14,13 @@ export class UsersService {
       .getAuth()
       .updateUser(uid, { password: newPassword });
   }
+
+  async findAll() {
+    const usersList = await this.firebaseService.getAuth().listUsers();
+    return usersList.users.map((user) => ({
+      uid: user.uid,
+      email: user.email,
+      name: user.displayName,
+    }));
+  }
 }
