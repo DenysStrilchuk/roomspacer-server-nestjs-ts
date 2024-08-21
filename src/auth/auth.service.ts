@@ -7,23 +7,14 @@ import {
 import * as admin from 'firebase-admin';
 import * as bcrypt from 'bcrypt';
 import { UserRecord } from 'firebase-admin/lib/auth';
-import { CreateUserDto } from '../users/dto/create-user.dto';
-import { LoginUserDto } from '../users/dto/login-user.dto';
-import { ResetPasswordDto } from '../users/dto/reset-password.dto';
+import { CreateUserDto } from './dto/create-user.dto';
+import { LoginUserDto } from './dto/login-user.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { MailService } from '../mail/mail.service';
 import * as crypto from 'crypto';
-import { ForgotPasswordDto } from '../users/dto/forgot-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { FirebaseService } from '../firebase/firebase.service';
-
-export interface ILoginResponse {
-  user: {
-    uid: string;
-    email: string;
-    name?: string;
-    picture?: string;
-  };
-  token: string;
-}
+import { ILoginResponse } from './interfaces/login-response.interface';
 
 @Injectable()
 export class AuthService {

@@ -10,12 +10,13 @@ import {
   Headers,
   Query,
 } from '@nestjs/common';
-import { AuthService, ILoginResponse } from './auth.service';
-import { CreateUserDto } from '../users/dto/create-user.dto';
-import { LoginUserDto } from '../users/dto/login-user.dto';
-import { ResetPasswordDto } from '../users/dto/reset-password.dto';
-import { ForgotPasswordDto } from '../users/dto/forgot-password.dto';
+import { AuthService } from './auth.service';
 import { FirebaseService } from '../firebase/firebase.service';
+import { CreateUserDto } from './dto/create-user.dto';
+import { LoginUserDto } from './dto/login-user.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ILoginResponse } from './interfaces/login-response.interface';
 
 @Controller('auth')
 export class AuthController {
