@@ -88,7 +88,7 @@ export class AuthService {
     }
   }
 
-  async login(loginUserDto: LoginUserDto): Promise<{ token: string }> {
+  async login(loginUserDto: LoginUserDto): Promise<ILoginResponse> {
     const { email, password, token } = loginUserDto;
 
     try {
@@ -115,7 +115,6 @@ export class AuthService {
         throw new UnauthorizedException('User not found');
       }
 
-      // Перевірка, чи підтверджена електронна пошта
       if (!userData.emailConfirmed) {
         throw new UnauthorizedException(
           'Email not confirmed. Please check your inbox.',
@@ -127,7 +126,14 @@ export class AuthService {
         throw new UnauthorizedException('Invalid password');
       }
 
-      return { token };
+      // Return the token along with user information
+      return {
+        token,
+        user: {
+          uid: user.uid,
+          email: user.email,
+        },
+      };
     } catch (error) {
       console.error('Login error:', error);
       throw new UnauthorizedException('Invalid login credentials');

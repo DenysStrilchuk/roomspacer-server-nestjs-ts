@@ -111,11 +111,9 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() loginUserDto: LoginUserDto) {
+  async login(@Body() loginUserDto: LoginUserDto): Promise<ILoginResponse> {
     try {
-      const { token } = await this.authService.login(loginUserDto);
-
-      return { token };
+      return await this.authService.login(loginUserDto);
     } catch (error) {
       throw new UnauthorizedException('Invalid login credentials');
     }
