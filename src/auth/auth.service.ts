@@ -23,6 +23,23 @@ export class AuthService {
     private readonly mailService: MailService,
   ) {}
 
+  async updateOnlineStatus(uid: string, isOnline: boolean): Promise<void> {
+    try {
+      await admin
+        .firestore()
+        .collection('users')
+        .doc(uid)
+        .update({
+          online: isOnline,
+          lastOnline: isOnline
+            ? null
+            : admin.firestore.FieldValue.serverTimestamp(),
+        });
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to update online status');
+    }
+  }
+
   async register(createUserDto: CreateUserDto): Promise<UserRecord> {
     const { name, email, password } = createUserDto;
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -126,6 +143,7 @@ export class AuthService {
         throw new UnauthorizedException('Invalid password');
       }
 
+      await this.updateOnlineStatus(user.uid, true);
       // Return the token along with user information
       return {
         token,
@@ -137,6 +155,15 @@ export class AuthService {
     } catch (error) {
       console.error('Login error:', error);
       throw new UnauthorizedException('Invalid login credentials');
+    }
+  }
+
+  async logout(uid: string): Promise<void> {
+    try {
+      // Оновлення статусу на "офлайн"
+      await this.updateOnlineStatus(uid, false);
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to logout');
     }
   }
 
@@ -297,7 +324,7 @@ export class AuthService {
           'User not found in Firestore. Please register first.',
         );
       }
-
+      await this.updateOnlineStatus(user.uid, true);
       return {
         user: {
           uid: user.uid,
