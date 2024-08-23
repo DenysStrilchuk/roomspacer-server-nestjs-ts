@@ -9,7 +9,6 @@ import {
   Param,
   Headers,
   Query,
-  Patch,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { FirebaseService } from '../firebase/firebase.service';
@@ -18,7 +17,6 @@ import { LoginUserDto } from './dto/login-user.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ILoginResponse } from './interfaces/login-response.interface';
-import * as admin from 'firebase-admin';
 
 @Controller('auth')
 export class AuthController {
@@ -58,20 +56,6 @@ export class AuthController {
         return { exists: false };
       }
       throw new BadRequestException('Error checking user existence');
-    }
-  }
-
-  @Patch('online-users')
-  async getOnlineUsers(): Promise<any[]> {
-    try {
-      const usersSnapshot = await admin
-        .firestore()
-        .collection('users')
-        .where('online', '==', true)
-        .get();
-      return usersSnapshot.docs.map((doc) => doc.data());
-    } catch (error) {
-      throw new InternalServerErrorException('Failed to retrieve online users');
     }
   }
 
