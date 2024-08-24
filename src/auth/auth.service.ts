@@ -159,6 +159,7 @@ export class AuthService {
   }
 
   async logout(uid: string): Promise<void> {
+    console.log(`Logging out user with uid: ${uid}`);
     try {
       // Оновлення статусу на "офлайн"
       await this.updateOnlineStatus(uid, false);
@@ -166,6 +167,7 @@ export class AuthService {
       throw new InternalServerErrorException('Failed to logout');
     }
   }
+
 
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<void> {
     const { email } = forgotPasswordDto;
