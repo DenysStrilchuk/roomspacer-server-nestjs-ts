@@ -168,7 +168,6 @@ export class AuthService {
     }
   }
 
-
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<void> {
     const { email } = forgotPasswordDto;
 
