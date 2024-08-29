@@ -161,9 +161,10 @@ export class AuthService {
   async logout(uid: string): Promise<void> {
     console.log(`Logging out user with uid: ${uid}`);
     try {
-      // Оновлення статусу на "офлайн"
       await this.updateOnlineStatus(uid, false);
+      console.log(`User with uid: ${uid} is now offline`);
     } catch (error) {
+      console.error(`Failed to logout user with uid: ${uid}:`, error.message);
       throw new InternalServerErrorException('Failed to logout');
     }
   }

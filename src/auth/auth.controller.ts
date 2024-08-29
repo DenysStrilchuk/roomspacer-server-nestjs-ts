@@ -61,17 +61,18 @@ export class AuthController {
 
   @Post('check-token')
   async checkToken(@Headers('Authorization') token: string) {
-    console.log('Received token for verification:', token); // Логування отриманого токена
+    console.log('Received token for verification:', token);
 
     try {
       const decodedToken = await this.authService.verifyToken(token);
-      console.log('Token verified successfully:', decodedToken); // Логування успішної перевірки
+      console.log('Token verified successfully:', decodedToken);
       return { isLogin: true, user: decodedToken };
     } catch (error) {
-      console.error('Token verification failed:', error.message); // Логування помилки
+      console.error('Token verification failed:', error.message);
       throw new UnauthorizedException('Invalid or expired token');
     }
   }
+
 
   @Post('register-with-google')
   async registerWithGoogle(
@@ -121,9 +122,12 @@ export class AuthController {
 
   @Post('logout')
   async logout(@Body('uid') uid: string): Promise<void> {
+    console.log(`Logout request received for uid: ${uid}`);
     try {
       await this.authService.logout(uid);
+      console.log(`Successfully logged out user with uid: ${uid}`);
     } catch (error) {
+      console.error(`Failed to logout user with uid: ${uid}:`, error.message);
       throw new InternalServerErrorException('Failed to logout');
     }
   }
