@@ -40,32 +40,6 @@ export class AuthService {
     }
   }
 
-  async refreshToken(refreshToken: string): Promise<ILoginResponse> {
-    try {
-      // Verify the refresh token (implement your verification logic here)
-      const decoded = await admin.auth().verifyIdToken(refreshToken); // Example for verifying token
-
-      const user = await admin.auth().getUser(decoded.uid);
-      if (!user) {
-        throw new UnauthorizedException('User not found');
-      }
-
-      // Generate a new token
-      const newToken = await admin.auth().createCustomToken(user.uid); // Create a new custom token
-
-      return {
-        token: newToken,
-        user: {
-          uid: user.uid,
-          email: user.email,
-        },
-      };
-    } catch (error) {
-      console.error('Refresh token error:', error);
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-  }
-
   async register(createUserDto: CreateUserDto): Promise<UserRecord> {
     const { name, email, password } = createUserDto;
     const hashedPassword = await bcrypt.hash(password, 10);

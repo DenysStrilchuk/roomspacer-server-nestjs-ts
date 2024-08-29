@@ -59,13 +59,6 @@ export class AuthController {
     }
   }
 
-  @Post('refresh-token')
-  async refreshToken(
-    @Body() body: { refreshToken: string },
-  ): Promise<ILoginResponse> {
-    return this.authService.refreshToken(body.refreshToken);
-  }
-
   @Post('check-token')
   async checkToken(@Headers('Authorization') token: string) {
     console.log('Received token for verification:', token);
