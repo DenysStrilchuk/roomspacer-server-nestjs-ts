@@ -73,7 +73,6 @@ export class AuthController {
     }
   }
 
-
   @Post('register-with-google')
   async registerWithGoogle(
     @Body('idToken') idToken: string,
