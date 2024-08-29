@@ -23,4 +23,30 @@ export class UsersService {
       name: user.displayName,
     }));
   }
+
+  async getUsersStatus(): Promise<
+    Array<{
+      uid: string;
+      email: string;
+      online: boolean;
+      lastOnline: Date | null;
+    }>
+  > {
+    // Отримання даних з Firestore
+    const usersSnapshot = await this.firebaseService
+      .getFirestore()
+      .collection('users')
+      .get();
+
+    // Обробка даних та їх повернення
+    return usersSnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        uid: doc.id,
+        email: data.email,
+        online: data.online,
+        lastOnline: data.lastOnline ? data.lastOnline.toDate() : null,
+      };
+    });
+  }
 }

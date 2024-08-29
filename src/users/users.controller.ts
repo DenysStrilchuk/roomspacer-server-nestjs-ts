@@ -11,4 +11,16 @@ export class UsersController {
   async findAll() {
     return await this.usersService.findAll();
   }
+
+  @Get('users-status')
+  async getUsersStatus(): Promise<
+    Array<{
+      uid: string;
+      email: string;
+      online: boolean;
+      lastOnline: Date | null;
+    }>
+  > {
+    return this.usersService.getUsersStatus();
+  }
 }
