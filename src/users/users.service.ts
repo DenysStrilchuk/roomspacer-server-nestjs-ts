@@ -67,7 +67,7 @@ export class UsersService {
     } catch (error) {
       if (error.code === 'auth/user-not-found') {
         // Якщо користувача не знайдено, надсилаємо запрошення
-        const invitationLink = `http://localhost:3000/auth/register/${encodeURIComponent(email)}`;
+        const invitationLink = `http://localhost:3000/auth/register`;
         await this.mailService.sendInvitationEmail(email, invitationLink);
       } else {
         throw error;
