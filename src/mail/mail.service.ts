@@ -71,4 +71,25 @@ export class MailService {
 
     await this.transporter.sendMail(mailOptions);
   }
+
+  async sendInvitationEmail(to: string, invitationLink: string) {
+    const templatePath = path.resolve(
+      process.cwd(),
+      'src',
+      'templates',
+      'invitation-email.template.html',
+    );
+    let htmlContent = fs.readFileSync(templatePath, 'utf8');
+
+    htmlContent = htmlContent.replace('{{ invitationLink }}', invitationLink);
+
+    const mailOptions = {
+      from: '"Roomspacer" <roomspacerapp@gmail.com>',
+      to,
+      subject: 'Invitation to Roomspacer',
+      html: htmlContent,
+    };
+
+    await this.transporter.sendMail(mailOptions);
+  }
 }

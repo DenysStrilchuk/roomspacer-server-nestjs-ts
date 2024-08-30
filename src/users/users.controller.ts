@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { AuthGuard } from '../auth/guards/auth.guard';
 
@@ -22,5 +22,11 @@ export class UsersController {
     }>
   > {
     return this.usersService.getUsersStatus();
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('invite')
+  async inviteUserByEmail(@Body('email') email: string): Promise<void> {
+    return this.usersService.inviteUserByEmail(email);
   }
 }

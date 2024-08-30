@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { FirebaseService } from '../firebase/firebase.service';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly firebaseService: FirebaseService) {}
+  constructor(
+    private readonly firebaseService: FirebaseService,
+    private readonly mailService: MailService,
+  ) {}
 
   async findOneByEmail(email: string) {
     return await this.firebaseService.getAuth().getUserByEmail(email);
@@ -48,5 +52,26 @@ export class UsersService {
         lastOnline: data.lastOnline ? data.lastOnline.toDate() : null,
       };
     });
+  }
+
+  async inviteUserByEmail(email: string): Promise<void> {
+    try {
+      const userRecord = await this.firebaseService
+        .getAuth()
+        .getUserByEmail(email);
+
+      // Якщо користувач вже зареєстрований
+      if (userRecord) {
+        throw new Error('User already exists.');
+      }
+    } catch (error) {
+      if (error.code === 'auth/user-not-found') {
+        // Якщо користувача не знайдено, надсилаємо запрошення
+        const invitationLink = `http://localhost:3000/auth/register/${encodeURIComponent(email)}`;
+        await this.mailService.sendInvitationEmail(email, invitationLink);
+      } else {
+        throw error;
+      }
+    }
   }
 }
